@@ -101,6 +101,8 @@ impl UsPhone {
 }
 
 impl Generator for UsPhone {
+    type Item = String;
+    
     fn generate(&self) -> Box<dyn Iterator<Item = String> + '_> {
         Box::new(iproduct!(self.area_codes(), (200..999), (0..9999)).map (|(area_code, district, number)| {
             self.format.format_number(area_code, district, number)

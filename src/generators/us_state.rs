@@ -11,6 +11,8 @@ const STATE_ABBREVIATIONS: [&str; 51] = [
 pub struct UsState;
 
 impl Generator for UsState {
+    type Item = String;
+    
     fn generate(&self) -> Box<dyn Iterator<Item = String> + '_> {
         Box::new(STATE_ABBREVIATIONS
             .iter()

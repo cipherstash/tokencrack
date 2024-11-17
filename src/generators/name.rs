@@ -8,6 +8,8 @@ use super::Generator;
 pub struct EnglishName;
 
 impl Generator for EnglishName {
+    type Item = String;
+    
     fn generate(&self) -> Box<dyn Iterator<Item = String> + '_> {
         Box::new(iproduct!(FIRST_NAMES.iter(), LAST_NAMES.iter()).map(|(first, last)| {
             format!("{} {}", first, last)

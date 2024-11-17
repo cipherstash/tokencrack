@@ -9,7 +9,10 @@ pub use us_phone::{UsPhone, PhoneNumberFormat};
 pub use dob::{Dob, DobFormat};
 pub use name::EnglishName;
 pub use email::Email;
+pub use secret::Secret;
 
 pub trait Generator {
-    fn generate(&self) -> Box<dyn Iterator<Item = String> + '_>;
+    type Item: AsRef<[u8]>;
+
+    fn generate(&self) -> Box<dyn Iterator<Item = Self::Item> + '_> where String: From<Self::Item>;
 }

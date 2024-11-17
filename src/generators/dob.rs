@@ -29,6 +29,8 @@ impl Dob {
 }
 
 impl Generator for Dob {
+    type Item = String;
+    
     fn generate(&self) -> Box<dyn Iterator<Item = String> + '_> {
         Box::new(iproduct!((1..13), (1..32), (1900..2020)).map (|(month, day, year)| {
             self.format.format(month, day, year)

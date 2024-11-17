@@ -5,9 +5,9 @@ use sha2::Digest;
 pub type Token<T> = GenericArray<u8, <T as OutputSizeUser>::OutputSize>;
 
 #[inline]
-pub fn tokenize<T>(input: &str) -> Token<T> where T: Digest + OutputSizeUser{
+pub fn tokenize<T>(input: &[u8]) -> Token<T> where T: Digest + OutputSizeUser {
     T::new()
-        .chain_update(input.as_bytes())
+        .chain_update(input)
         .finalize()
 }
 

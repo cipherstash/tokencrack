@@ -22,14 +22,18 @@ impl<G, D> Cracker<G, D> where D: OutputSizeUser + Digest, G: Generator {
     }
 }
 
-impl<G, D> Cracker<G, D> where D: OutputSizeUser + Digest, G: Generator {
+impl<G, D> Cracker<G, D> where D: OutputSizeUser + Digest, G: Generator, String: From<<G as Generator>::Item> {
     pub fn crack(&self, target: &[u8]) -> Option<String> {
         let target = Token::<D>::clone_from_slice(target);
-        self.generator.generate().find(|line| tokenize::<D>(line) == target).map(String::from)
+        self.generator
+            .generate()
+            .find(|line| tokenize::<D>(line.as_ref()) == target)
+            .map(String::from)
     }
 
     pub fn crack_with_salt(&self, target: &[u8], salt: &[u8]) -> Option<String> {
         let target = Token::<D>::clone_from_slice(target);
-        self.generator.generate().find(|line| tokenize_with_salt::<D>(line, salt) == target).map(String::from)
+        //self.generator.generate().find(|line| tokenize_with_salt::<D>(line, salt) == target).map(String::from)
+        unimplemented!()
     }
 }

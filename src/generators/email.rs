@@ -33,6 +33,8 @@ impl Email {
 }
 
 impl Generator for Email {
+    type Item = String;
+
     fn generate(&self) -> Box<dyn Iterator<Item = String> + '_> {
         Box::new(Domain.generate().flat_map(move |domain| {
             self.generate_email_formats(&domain)
@@ -44,6 +46,8 @@ pub struct Domain;
 
 // TODO: The domain list should only include domains that have MX records
 impl Generator for Domain {
+    type Item = String;
+    
     fn generate(&self) -> Box<dyn Iterator<Item = String> + '_> {
         let file = File::open("com_zone_fullf98195caa4").expect("domain name file not found");
         let reader = io::BufReader::new(file);

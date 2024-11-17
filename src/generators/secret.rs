@@ -1,47 +1,60 @@
-const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //abcdefghijklmnopqrstuvwxyz0123456789)(*&^%$#@!~";
-const MAX_CHARSET: u8 = CHARSET.len() as u8 - 1;
+use super::Generator;
 
-pub struct Secret<const N: usize> {
+const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789)(*&^%$#@!~";
+const MAX_CHARSET: u8 = CHARSET.len() as u8;
+
+pub struct SecretIterator<const N: usize> {
     idx: usize,
-    current_size: usize,
     counters: [u8; N],
+    full: bool,
 }
 
-impl<const N: usize> Secret<N> {
+impl<const N: usize> SecretIterator<N> {
     pub fn new() -> Self {
         Self {
             counters: [0; N],
-            current_size: 1,
             idx: 0,
+            full: false,
         }
     }
 
-    fn increment_counters(&mut self) {
-        if self.counters[self.idx] == MAX_CHARSET {
-            self.counters[self.idx] = 0;
+    fn increment_counters(&mut self) -> bool {
+        if increment_counters(&mut self.counters, self.idx) {
             self.idx += 1;
+            println!("Incrementing idx to {}", self.idx);
+            if self.idx == N {
+                return true;
+            }
         }
-
-        if self.idx == self.current_size {
-            self.current_size += 1;
-            self.idx = 0;
-            self.counters = [0; N];
-        }
-
-        self.counters[self.idx] += 1;
+        false
     }
 }
 
-impl<const N: usize> Iterator for Secret<N> {
+// Increments and returns true if the counter is at the maximum value
+fn increment_counters(counter: &mut [u8], idx: usize) -> bool {
+    counter[idx] += 1;
+    if counter[idx] == MAX_CHARSET {
+        counter[idx] = 0;
+        if idx == 0 {
+            return true;
+        } else {
+            return increment_counters(counter, idx - 1);
+        }
+    }
+    false
+}
+
+impl<const N: usize> Iterator for SecretIterator<N> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.counters == [MAX_CHARSET; N] {
+        if self.full {
             return None;
         }
-
-        let s = build_string(self.counters, self.current_size);
-        self.increment_counters();
+        let s = build_string(self.counters, self.idx + 1);
+        if self.increment_counters() {
+            self.full = true;
+        }
         Some(s)
     }
 }
@@ -55,13 +68,12 @@ fn build_string<const N: usize>(counters: [u8; N], length: usize) -> String {
     s
 }
 
-#[cfg(test)]
-mod test {
-    #[test]
-    fn test_iterate() {
-        let secret = super::Secret::<2>::new();
-        for x in secret {
-            println!("{}", x);
-        }
+pub struct Secret<const N: usize>;
+
+impl<const N: usize> Generator for Secret<N> {
+    type Item = String;
+
+    fn generate(&self) -> Box<dyn Iterator<Item = Self::Item> + '_> {
+        Box::new(SecretIterator::<N>::new())
     }
 }

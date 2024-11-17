@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use rayon::prelude::*;
 use tokencrack::{Cracker, generators, Sha256};
-use tokencrack::generators::{UsState, UsPhone, Dob, DobFormat, EnglishName, Email};
+use tokencrack::generators::{Dob, DobFormat, Email, EnglishName, Secret, UsPhone, UsState};
 use tokencrack::token::{tokenize, tokenize_with_salt};
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -11,14 +11,16 @@ use tokencrack::generators::Generator;
 const CHUNK_SIZE: usize = 100_000;
 
 fn main() -> io::Result<()> {
-    let token = tokenize::<Sha256>("CA");
+    let token = tokenize::<Sha256>("sEc".as_ref());
     /*println!("{}", hex::encode(&tokenize::<Sha256>("555-800-1000")[..4]));
     println!("{}", hex::encode(&tokenize::<Sha256>("123-590-7666")[..4]));
     println!("{}", hex::encode(&tokenize::<Sha256>("123-456-7890")[..4]));
     println!("{}", hex::encode(&tokenize::<Sha256>("123-333-0000")[..4]));*/
 
-    let cracker: Cracker<_, Sha256> = Cracker::new(UsState);
+    let cracker: Cracker<_, Sha256> = Cracker::new(Secret::<3>);
     cracker.crack(&token).map(|found| println!("Found: {}", found));
+    //let cracker: Cracker<_, Sha256> = Cracker::new(UsState);
+    //cracker.crack(&token).map(|found| println!("Found: {}", found));
 
     /*Email::new("Daniel Draper".to_string()).generate().for_each(|line| {
         println!("{}", line);
