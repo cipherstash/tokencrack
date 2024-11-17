@@ -3,6 +3,7 @@ mod us_phone;
 mod dob;
 mod email;
 mod name;
+mod secret;
 pub use us_state::UsState;
 pub use us_phone::{UsPhone, PhoneNumberFormat};
 pub use dob::{Dob, DobFormat};
