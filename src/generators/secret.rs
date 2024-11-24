@@ -1,25 +1,29 @@
 use super::Generator;
 
-const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789)(*&^%$#@!~";
+const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZZ";//abcdefghijklmnopqrstuvwxyz0123456789)(*&^%$#@!~";
 const MAX_CHARSET: u8 = CHARSET.len() as u8;
 
-pub struct SecretIterator<const N: usize> {
+pub struct SecretIterator<'i, const N: usize> {
     idx: usize,
     counters: [u8; N],
+    buf: [u8; N],
     full: bool,
+    _phantom: std::marker::PhantomData<&'i ()>,
 }
 
-impl<const N: usize> SecretIterator<N> {
+impl<'i, const N: usize> SecretIterator<'i, N> {
     pub fn new() -> Self {
         Self {
             counters: [0; N],
+            buf: [0; N],
             idx: 0,
             full: false,
+            _phantom: std::marker::PhantomData,
         }
     }
 
     fn increment_counters(&mut self) -> bool {
-        if increment_counters(&mut self.counters, self.idx) {
+        if increment_counters_inner(&mut self.counters, &mut self.buf, self.idx) {
             self.idx += 1;
             println!("Incrementing idx to {}", self.idx);
             if self.idx == N {
@@ -31,27 +35,32 @@ impl<const N: usize> SecretIterator<N> {
 }
 
 // Increments and returns true if the counter is at the maximum value
-fn increment_counters(counter: &mut [u8], idx: usize) -> bool {
+fn increment_counters_inner<const N: usize>(counter: &mut [u8], buf: &mut [u8; N], idx: usize) -> bool {
     counter[idx] += 1;
+    buf[idx] = CHARSET[counter[idx] as usize - 1];
+
     if counter[idx] == MAX_CHARSET {
         counter[idx] = 0;
+        buf[idx] = CHARSET[0];
+
         if idx == 0 {
             return true;
         } else {
-            return increment_counters(counter, idx - 1);
+            return increment_counters_inner(counter, buf, idx - 1);
         }
     }
     false
 }
 
-impl<const N: usize> Iterator for SecretIterator<N> {
-    type Item = String;
+impl<'i, const N: usize> Iterator for SecretIterator<'i, N> {
+    type Item = &'i [u8];
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.full {
             return None;
         }
-        let s = build_string(self.counters, self.idx + 1);
+        //let s = build_string(self.counters, self.idx + 1);
+        let s = &self.buf[0..=self.idx]; //.iter().map(|b| *b as char).collect::<String>();
         if self.increment_counters() {
             self.full = true;
         }

@@ -1,64 +1,76 @@
-use itertools::Itertools;
-use rayon::prelude::*;
-use tokencrack::{Cracker, generators, Sha256};
-use tokencrack::generators::{Dob, DobFormat, Email, EnglishName, Secret, UsPhone, UsState};
-use tokencrack::token::{tokenize, tokenize_with_salt};
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::process::exit;
-use tokencrack::generators::Generator;
+use clap::{Parser, Subcommand};
+use tokencrack::generators::{EmailForName, EnglishName, UsPhone};
+use tokencrack::{generators, Cracker, Sha256};
 
-const CHUNK_SIZE: usize = 100_000;
+#[derive(Debug, Subcommand)]
+enum DataGenerator {
+    UsPhone {
+        target: String,
+        // TODO: Use value_enum https://docs.rs/clap/4.5.21/clap/_derive/_tutorial/chapter_3/index.html#enumerated-values
+        #[arg(long)]
+        state: Option<String>,
+    },
+    //UsState,
+    //Dob,
+    Email {
+        #[arg(short, long)]
+        name: Option<String>,
+        target: String,
+    },
+    EnglishName {
+        target: String,
+    },
+}
 
-fn main() -> io::Result<()> {
-    let token = tokenize::<Sha256>("sEc".as_ref());
-    /*println!("{}", hex::encode(&tokenize::<Sha256>("555-800-1000")[..4]));
-    println!("{}", hex::encode(&tokenize::<Sha256>("123-590-7666")[..4]));
-    println!("{}", hex::encode(&tokenize::<Sha256>("123-456-7890")[..4]));
-    println!("{}", hex::encode(&tokenize::<Sha256>("123-333-0000")[..4]));*/
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Cli {
+    #[command(subcommand)]
+    data_generator: DataGenerator,
+    #[arg(short = 'f', long, global = true, default_value = "hex")]
+    target_format: Option<String>,
+}
 
-    let cracker: Cracker<_, Sha256> = Cracker::new(Secret::<3>);
-    cracker.crack(&token).map(|found| println!("Found: {}", found));
-    //let cracker: Cracker<_, Sha256> = Cracker::new(UsState);
-    //cracker.crack(&token).map(|found| println!("Found: {}", found));
+fn get_target(target: &str, _format: Option<String>) -> Vec<u8> {
+    hex::decode(target).unwrap() // TODO: Error handling
+}
 
-    /*Email::new("Daniel Draper".to_string()).generate().for_each(|line| {
-        println!("{}", line);
-    });
-    //let target = tokenize::<Sha256>("347-554-2635");
-    //let target = tokenize::<Sha256>("1981-01-01");
-    let target = tokenize::<Sha256>("Daniel Draper");*/
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // TODO: miette
+    let cli = Cli::parse();
+    let target_format = cli.target_format;
+    let result = match cli.data_generator {
+        DataGenerator::UsPhone { state: _, target } => {
+            // TODO: format
+            let generator = UsPhone::new(generators::PhoneNumberFormat::WithDots);
+            // TODO: State
+            let cracker: Cracker<_, Sha256> = Cracker::new(generator);
+            let target = get_target(&target, target_format);
+            cracker.crack(&target)
+        }
+        DataGenerator::EnglishName { target } => {
+            let generator = EnglishName;
+            let cracker: Cracker<_, Sha256> = Cracker::new(generator);
+            let target = get_target(&target, target_format);
+            cracker.crack(&target)
+        }
+        DataGenerator::Email {
+            name: Some(name),
+            target,
+        } => {
+            let generator = EmailForName::new(name);
+            let cracker: Cracker<_, Sha256> = Cracker::new(generator);
+            let target = get_target(&target, target_format);
+            cracker.crack(&target)
+        }
+        _ => unimplemented!(),
+    };
 
-    //let salt = hex::decode("aabb771100").unwrap();
-    //let cracker: Cracker<_, Sha256> = Cracker::new(UsPhone::new(generators::PhoneNumberFormat::WithDashes).for_state("NY"));
-    //let cracker: Cracker<_, Sha256> = Cracker::new(Dob::new(DobFormat::Standard));
-    /*let cracker: Cracker<_, Sha256> = Cracker::new(EnglishName);
-
-    if let Some(found) = cracker.crack(&target) {
+    if let Some(found) = result {
         println!("Found: {}", found);
     } else {
         println!("Unable to reverse token");
-    }*/
-
-    /*let file = File::open("com_zone_fullf98195caa4")?;
-    let reader = io::BufReader::new(file);
-
-    let target = hash("cipherstash.com");
-
-    println!("Target: {:x}", target);
-
-    reader
-        .lines()
-        .chunks(CHUNK_SIZE)
-        .into_iter()
-        .for_each(|chunk| {
-            // FIXME: This line probably slows things down
-            let chunk: Vec<String> = chunk.map(|line| line.unwrap()).collect();
-            if let Some(found) = search_chunk(&chunk, &target) {
-                println!("Found: {}", found);
-                exit(0);
-            }
-        });*/
+    }
 
     Ok(())
 }

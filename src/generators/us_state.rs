@@ -7,15 +7,12 @@ const STATE_ABBREVIATIONS: [&str; 51] = [
     "WV", "WI", "WY",
 ];
 
-
 pub struct UsState;
 
 impl Generator for UsState {
     type Item = String;
-    
+
     fn generate(&self) -> Box<dyn Iterator<Item = String> + '_> {
-        Box::new(STATE_ABBREVIATIONS
-            .iter()
-            .map(|state| state.to_string()))
+        Box::new(STATE_ABBREVIATIONS.iter().map(|state| state.to_string()))
     }
 }
